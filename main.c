@@ -9,6 +9,10 @@ void process_init();
 void process1();
 void process2();
 
+void process_1s();
+void process_2s();
+void process_3s();
+
 
 int main()
 {
@@ -21,8 +25,9 @@ int main()
     initial_RTOS(process_init, "periodic", HIGH);
     initial_RTOS(process1, "periodic", HIGH);
     initial_RTOS(process2, "periodic", LOW);
+    initial_RTOS(process_init, "non-periodic", HIGH);
 
-    scheduler(&topWaitList);
+    scheduler(&topWaitList, &topSuspendList);
 
     return 0;
 }
@@ -34,15 +39,38 @@ void process_init(){
 
 void process1(){
     printf("hello world\n");
-    func=process2;
+
     wait(&topWaitList, 2);
-    //scheduler();
+
 }
 
 void process2(){
     printf("hello linux\n");
-    func=process1;
+
     wait(&topWaitList, 3);
-    //scheduler();
+
 }
+
+void process_1s(){
+    printf("bye RTOS\n");
+
+    wait(&topWaitList, 3);
+    //suspend();
+}
+
+void process_2s(){
+    printf("bye linux\n");
+
+    wait(&topWaitList, 3);
+    //suspend();
+}
+
+void process_3s(){
+    printf("bye world\n");
+
+    wait(&topWaitList, 3);
+    //suspend();
+}
+
+
 

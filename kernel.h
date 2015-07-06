@@ -39,7 +39,7 @@ struct suspend_list{
 
 void (*func)();
 
-void scheduler();
+void scheduler(struct wait_list **, struct suspend_list **);
 void initial_RTOS(void (*process)(), char [], enum priority);
 
 void wait(struct wait_list **, float );
@@ -50,21 +50,18 @@ void delay(unsigned int);
 
 
 
-void scheduler(struct wait_list **t){
+void scheduler(struct wait_list **t, struct suspend_list **s){
 while(1){
 
+//wait list
 struct wait_list *temp=*t;
 struct wait_list *tempx;
+
     while(temp->next!=NULL)
     {
-      //printf("%d ->", temp->pid);
       tempx=temp;
       temp=temp->next;
     }
-//printf("%d \t", temp->pid);
-
-
-//delay(1000);
 
 struct wait_list *temp1=*t;
 struct wait_list *temp2;
@@ -88,24 +85,59 @@ temp1=temp1->next;
 
 }
 
+//suspend list
+
+struct suspend_list *endS=*s;
+struct suspend_list *Second_last;
+
+    while(endS->next!=NULL)
+    {
+      Second_last=endS;
+      endS=endS->next;
+    }
+
+struct suspend_list *pointBeforeInst=*s;
+struct suspend_list *pointOfInst;
+pointOfInst=NULL;
+
+while(pointBeforeInst->next!=NULL)
+{
+
+if(endS->time_atMost_resume<pointBeforeInst->time_atMost_resume){
+    endS->next=pointBeforeInst;
+    if(pointOfInst!=NULL)
+        pointOfInst->next=endS;
+    else
+        *s=endS;
+    Second_last->next=NULL;
+    break;
+}
+
+pointOfInst=pointBeforeInst;
+pointBeforeInst=pointBeforeInst->next;
+
+}
+
 //test addition
 struct wait_list *tempy=*t;
     while(tempy->next!=NULL)
     {
       printf("%4.2f ->", tempy->time_at_resume);
+      //printf("%d ->", temp->pid);
       tempy=tempy->next;
     }
 printf("%4.2f \t", tempy->time_at_resume);
+//printf("%d \t", temp->pid);
 //ends
 
 while(CURRENT<(*t)->time_at_resume);
+
 if(CURRENT>=(*t)->time_at_resume){
 
 
 func=(*t)->pcb_wait->pointer_to_function;
 current_pcb=(*t)->pcb_wait;
 (*t)->pcb_wait->stat=running;
-
 
 func();
 
@@ -178,6 +210,7 @@ void wait(struct wait_list **t, float d){
     temp->time_at_block=((float)(clock() - time_init)/CLOCKS_PER_MSEC);
     temp->del=d;
     temp->time_at_resume=temp->time_at_block+d;
+
 
     temp->pcb_wait->stat=waiting;
 
