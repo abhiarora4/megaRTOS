@@ -47,6 +47,8 @@ void suspend(struct suspend_list **, float );
 
 void delay(unsigned int);
 
+void RTOS_debugger();
+
 
 
 
@@ -118,7 +120,23 @@ pointBeforeInst=pointBeforeInst->next;
 
 }
 
-//test addition
+
+//while(CURRENT<(*t)->time_at_resume);
+/*
+if(CURRENT>((*s)->time_atMost_resume)){
+    func=(*s)->pcb_suspend->pointer_to_function;
+    current_pcb=(*s)->pcb_suspend;
+    func();
+}
+
+else*/ if(CURRENT>=(*t)->time_at_resume){
+
+
+func=(*t)->pcb_wait->pointer_to_function;
+current_pcb=(*t)->pcb_wait;
+(*t)->pcb_wait->stat=running;
+
+    //test addition
 struct wait_list *tempy=*t;
     while(tempy->next!=NULL)
     {
@@ -130,19 +148,15 @@ printf("%4.2f \t", tempy->time_at_resume);
 //printf("%d \t", temp->pid);
 //ends
 
-while(CURRENT<(*t)->time_at_resume);
-
-if(CURRENT>=(*t)->time_at_resume){
-
-
-func=(*t)->pcb_wait->pointer_to_function;
-current_pcb=(*t)->pcb_wait;
-(*t)->pcb_wait->stat=running;
-
 func();
-
 }
-
+/*
+else{
+    func=(*s)->pcb_suspend->pointer_to_function;
+    current_pcb=(*s)->pcb_suspend;
+    func();
+}
+*/
 }
 }
 
@@ -215,8 +229,20 @@ void wait(struct wait_list **t, float d){
     temp->pcb_wait->stat=waiting;
 
 
+}
 
+void suspend(struct suspend_list **s, float del){
+    struct suspend_list *temp=*s;
+    while(temp->next!=NULL)
+      temp=temp->next;
 
+    temp->next=*s;
+    *s=(*s)->next;
+    temp=temp->next;
+    temp->next=NULL;
+
+    temp->time_at_suspend=((float)(clock() - time_init)/CLOCKS_PER_MSEC);
+    temp->time_atMost_resume=temp->time_at_suspend+del;
 
 }
 
@@ -228,6 +254,11 @@ void delay(unsigned int t){
 	ticks2=ticks1;
 	while(((ticks2-ticks1)*1000/CLOCKS_PER_SEC)<t)
 		ticks2=clock();
+}
+
+inline void RTOS_debugger(){
+
+
 }
 
 #endif

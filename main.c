@@ -25,7 +25,10 @@ int main()
     initial_RTOS(process_init, "periodic", HIGH);
     initial_RTOS(process1, "periodic", HIGH);
     initial_RTOS(process2, "periodic", LOW);
-    initial_RTOS(process_init, "non-periodic", HIGH);
+
+    initial_RTOS(process_1s, "non-periodic", HIGH);
+    initial_RTOS(process_2s, "non-periodic", HIGH);
+    initial_RTOS(process_3s, "non-periodic", HIGH);
 
     scheduler(&topWaitList, &topSuspendList);
 
@@ -54,22 +57,19 @@ void process2(){
 void process_1s(){
     printf("bye RTOS\n");
 
-    wait(&topWaitList, 3);
-    //suspend();
+    suspend(&topSuspendList, 5);
 }
 
 void process_2s(){
     printf("bye linux\n");
 
-    wait(&topWaitList, 3);
-    //suspend();
+    suspend(&topSuspendList, 5);
 }
 
 void process_3s(){
     printf("bye world\n");
 
-    wait(&topWaitList, 3);
-    //suspend();
+    suspend(&topSuspendList, 5);
 }
 
 

@@ -11,7 +11,5 @@ struct wait_list *topWaitList=NULL;
 struct suspend_list *topSuspendList=NULL;
 clock_t time_init;
 
-int delta=5;
-
 
 #endif
