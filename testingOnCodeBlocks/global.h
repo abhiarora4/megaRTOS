@@ -2,7 +2,7 @@
 #define GLOBAL_H
 
 
-#define CLOCKS_PER_MSEC CLOCKS_PER_SEC
+#define CLOCKS_PER_MSEC CLOCKS_PER_SEC*1000
 #define MAX_PROCESS 10
 
 struct pcb *process_control_block;
