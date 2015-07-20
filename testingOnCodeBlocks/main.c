@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include "kernel.h"
 #include <time.h>       /* clock_t, clock, CLOCKS_PER_SEC */
-#include<math.h>
+#include <math.h>
 #include "global.h"
+
 
 void process_init();
 void process1();
@@ -16,19 +17,18 @@ void process_3s();
 
 int main()
 {
-//*current_pcb=(struct pcb *)malloc(sizeof(struct pcb));
+
     time_init=clock();
 
     process_control_block=(struct pcb *)calloc(MAX_PROCESS, sizeof(struct pcb));
 
+    mTaskCreate(process_init, "periodic", HIGH);
+    mTaskCreate(process1, "periodic", HIGH);
+    mTaskCreate(process2, "periodic", LOW);
 
-    initial_RTOS(process_init, "periodic", HIGH);
-    initial_RTOS(process1, "periodic", HIGH);
-    initial_RTOS(process2, "periodic", LOW);
-
-    initial_RTOS(process_1s, "non-periodic", HIGH);
-    initial_RTOS(process_2s, "non-periodic", HIGH);
-    initial_RTOS(process_3s, "non-periodic", HIGH);
+    //mTaskCreate(process_1s, "non-periodic", HIGH);
+    //mTaskCreate(process_2s, "non-periodic", HIGH);
+    //mTaskCreate(process_3s, "non-periodic", HIGH);
 
     scheduler(&topWaitList, &topSuspendList);
 
@@ -37,40 +37,39 @@ int main()
 
 void process_init(){
     printf("Initialising\n");
-    wait(&topWaitList, 5);
+    wait(&topWaitList, 5000);
 }
 
 void process1(){
     printf("hello world\n");
 
-    wait(&topWaitList, 2);
+    wait(&topWaitList, 2000);
 
 }
 
 void process2(){
     printf("hello linux\n");
 
-    wait(&topWaitList, 3);
+    wait(&topWaitList, 3000);
 
 }
 
 void process_1s(){
     printf("bye RTOS\n");
 
-    suspend(&topSuspendList, 5);
+    suspend(&topSuspendList,1 );
 }
 
 void process_2s(){
     printf("bye linux\n");
 
-    suspend(&topSuspendList, 5);
+    suspend(&topSuspendList, 2);
 }
 
 void process_3s(){
     printf("bye world\n");
 
-    suspend(&topSuspendList, 5);
+    suspend(&topSuspendList, 3);
 }
-
 
 
