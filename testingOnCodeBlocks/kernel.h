@@ -6,23 +6,19 @@
 #define CURRENT ((float)(clock()-time_init)/CLOCKS_PER_MSEC)
 
 
-enum status {init, ready, running, waiting, suspended, finished};
+enum status {init, ready, running, waiting, blocked, suspended, finished};
 enum priority {HIGH, LOW, MEDIUM};
-
 
 struct pcb{
 void (*pointer_to_function)();
-enum status stat;
-enum priority lev;
-
+enum status status;
+enum priority level;
+int pid;
 };
 
 struct wait_list{
     struct pcb *pcb_wait;
     struct wait_list *next;
-
-    int pid;
-
     float time_at_block;
     float del;
     float time_at_resume;
@@ -31,7 +27,6 @@ struct wait_list{
 struct suspend_list{
     struct pcb *pcb_suspend;
     struct suspend_list *next;
-    int pid;
     float time_atMost_resume;
     float time_at_suspend;
 };
@@ -40,7 +35,7 @@ struct suspend_list{
 void (*func)();
 
 void scheduler(struct wait_list **, struct suspend_list **);
-void initial_RTOS(void (*process)(), char [], enum priority);
+void * mTaskCreate(void (*process)(), char [], enum priority);
 
 void wait(struct wait_list **, float );
 void suspend(struct suspend_list **, float );
@@ -49,46 +44,43 @@ void delay(unsigned int);
 
 void RTOS_debugger();
 
-
-
-
 void scheduler(struct wait_list **t, struct suspend_list **s){
 while(1){
 
 //wait list
-struct wait_list *temp=*t;
-struct wait_list *tempx;
+struct wait_list *tempLastWaitList=*t;
+struct wait_list *tempSecondLastWaitList;
 
-    while(temp->next!=NULL)
+    while(tempLastWaitList->next!=NULL)
     {
-      tempx=temp;
-      temp=temp->next;
+      tempSecondLastWaitList=tempLastWaitList;
+      tempLastWaitList=tempLastWaitList->next;
     }
 
-struct wait_list *temp1=*t;
-struct wait_list *temp2;
-temp2=NULL;
+struct wait_list *tempPointOfInsert=*t;
+struct wait_list *tempBeforeInsert;
+tempBeforeInsert=NULL;
 
-while(temp1->next!=NULL)
+while(tempPointOfInsert->next!=NULL)
 {
 
-if(temp->time_at_resume<temp1->time_at_resume){
-    temp->next=temp1;
-    if(temp2!=NULL)
-        temp2->next=temp;
+if(tempLastWaitList->time_at_resume<tempPointOfInsert->time_at_resume){
+    tempLastWaitList->next=tempPointOfInsert;
+    if(tempBeforeInsert!=NULL)
+        tempBeforeInsert->next=tempLastWaitList;
     else
-        *t=temp;
-    tempx->next=NULL;
+        *t=tempLastWaitList;
+    tempSecondLastWaitList->next=NULL;
     break;
 }
 
-temp2=temp1;
-temp1=temp1->next;
+tempBeforeInsert=tempPointOfInsert;
+tempPointOfInsert=tempPointOfInsert->next;
 
 }
 
 //suspend list
-
+/*
 struct suspend_list *endS=*s;
 struct suspend_list *Second_last;
 
@@ -121,53 +113,55 @@ pointBeforeInst=pointBeforeInst->next;
 }
 
 
-//while(CURRENT<(*t)->time_at_resume);
-/*
+delay(100);
+
 if(CURRENT>((*s)->time_atMost_resume)){
     func=(*s)->pcb_suspend->pointer_to_function;
     current_pcb=(*s)->pcb_suspend;
     func();
 }
 
-else*/ if(CURRENT>=(*t)->time_at_resume){
-
+else */
+delay(100);
+if((*t)!=NULL&&CURRENT>=(*t)->time_at_resume){
 
 func=(*t)->pcb_wait->pointer_to_function;
 current_pcb=(*t)->pcb_wait;
-(*t)->pcb_wait->stat=running;
+(*t)->pcb_wait->status=running;
 
     //test addition
 struct wait_list *tempy=*t;
     while(tempy->next!=NULL)
     {
-      printf("%4.2f ->", tempy->time_at_resume);
+      printf("%4.2f ->", tempy->time_at_resume/1000);
       //printf("%d ->", temp->pid);
       tempy=tempy->next;
     }
-printf("%4.2f \t", tempy->time_at_resume);
+printf("%4.2f \t", tempy->time_at_resume/1000);
 //printf("%d \t", temp->pid);
 //ends
 
 func();
 }
-/*
-else{
+
+else if((*s)!=NULL){
     func=(*s)->pcb_suspend->pointer_to_function;
     current_pcb=(*s)->pcb_suspend;
     func();
 }
-*/
+
 }
 }
 
 
 
-void initial_RTOS(void (*process)(), char arg[], enum priority lev){
+void * mTaskCreate(void (*process)(), char arg[], enum priority lev){
 
     static int i;
 
     process_control_block[i].pointer_to_function=process;
-    process_control_block[i].stat=ready;
+    process_control_block[i].status=ready;
+    void *ret;
 
 
     if(arg=="periodic")
@@ -176,7 +170,7 @@ void initial_RTOS(void (*process)(), char arg[], enum priority lev){
         temp->pcb_wait=&(process_control_block[i]);
         temp->time_at_block=((float)(clock()-time_init))/CLOCKS_PER_SEC;
         temp->del=0;
-        temp->pid=i;
+        temp->pcb_wait->pid=i;
 
         if(topWaitList==NULL){
             topWaitList=temp;
@@ -187,6 +181,8 @@ void initial_RTOS(void (*process)(), char arg[], enum priority lev){
             topWaitList=temp;
         }
 
+        ret=topWaitList->pcb_wait;
+
     }
     else if(arg=="non-periodic"){
 
@@ -194,7 +190,7 @@ void initial_RTOS(void (*process)(), char arg[], enum priority lev){
         temp->pcb_suspend=&(process_control_block[i]);
         temp->time_at_suspend=((float)(clock()-time_init))/CLOCKS_PER_SEC;
         temp->time_atMost_resume=temp->time_at_suspend;
-        temp->pid=i;
+        temp->pcb_suspend->pid=i;
         if(topSuspendList==NULL){
             topSuspendList=temp;
             temp->next=NULL;
@@ -204,9 +200,13 @@ void initial_RTOS(void (*process)(), char arg[], enum priority lev){
             topSuspendList=temp;
         }
 
+        ret=topSuspendList->pcb_suspend;
+
     }
 
+
 i++;
+return ret;
 }
 
 
@@ -226,7 +226,7 @@ void wait(struct wait_list **t, float d){
     temp->time_at_resume=temp->time_at_block+d;
 
 
-    temp->pcb_wait->stat=waiting;
+    temp->pcb_wait->status=waiting;
 
 
 }
@@ -262,4 +262,3 @@ inline void RTOS_debugger(){
 }
 
 #endif
-
