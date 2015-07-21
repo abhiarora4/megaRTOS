@@ -26,9 +26,9 @@ int main()
     mTaskCreate(process1, HIGH);
     mTaskCreate(process2, LOW);
 
-    mTaskCreate(process_1s, HIGH);
-    mTaskCreate(process_2s,  HIGH);
-    //mTaskCreate(process_3s, "non-periodic", HIGH);
+    //mTaskCreate(process_1s, HIGH);
+    //mTaskCreate(process_2s,  HIGH);
+    //mTaskCreate(process_3s, HIGH);
 
     scheduler(&topWaitList, &topSuspendList);
 
