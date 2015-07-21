@@ -35,7 +35,7 @@ struct suspend_list{
 void (*func)();
 
 void scheduler(struct wait_list **, struct suspend_list **);
-void * mTaskCreate(void (*process)(), char [], enum priority);
+void * mTaskCreate(void (*process)(), enum priority);
 
 void wait(struct wait_list **, float );
 void suspend(struct suspend_list **, float );
@@ -47,37 +47,7 @@ void RTOS_debugger();
 void scheduler(struct wait_list **t, struct suspend_list **s){
 while(1){
 
-//wait list
-struct wait_list *tempLastWaitList=*t;
-struct wait_list *tempSecondLastWaitList;
 
-    while(tempLastWaitList->next!=NULL)
-    {
-      tempSecondLastWaitList=tempLastWaitList;
-      tempLastWaitList=tempLastWaitList->next;
-    }
-
-struct wait_list *tempPointOfInsert=*t;
-struct wait_list *tempBeforeInsert;
-tempBeforeInsert=NULL;
-
-while(tempPointOfInsert->next!=NULL)
-{
-
-if(tempLastWaitList->time_at_resume<tempPointOfInsert->time_at_resume){
-    tempLastWaitList->next=tempPointOfInsert;
-    if(tempBeforeInsert!=NULL)
-        tempBeforeInsert->next=tempLastWaitList;
-    else
-        *t=tempLastWaitList;
-    tempSecondLastWaitList->next=NULL;
-    break;
-}
-
-tempBeforeInsert=tempPointOfInsert;
-tempPointOfInsert=tempPointOfInsert->next;
-
-}
 
 //suspend list
 /*
@@ -122,40 +92,75 @@ if(CURRENT>((*s)->time_atMost_resume)){
 }
 
 else */
+
 delay(100);
 if((*t)!=NULL&&CURRENT>=(*t)->time_at_resume){
-
-func=(*t)->pcb_wait->pointer_to_function;
-current_pcb=(*t)->pcb_wait;
-(*t)->pcb_wait->status=running;
-
-    //test addition
+//test addition
 struct wait_list *tempy=*t;
     while(tempy->next!=NULL)
     {
-      printf("%4.2f ->", tempy->time_at_resume/1000);
+      printf("%4.2f of %d->", tempy->time_at_resume/1000, tempy->pcb_wait->pid);
       //printf("%d ->", temp->pid);
       tempy=tempy->next;
     }
-printf("%4.2f \t", tempy->time_at_resume/1000);
+printf("%4.2f of %d \t", tempy->time_at_resume/1000, tempy->pcb_wait->pid);
 //printf("%d \t", temp->pid);
 //ends
+
+
+mSchedulerWait(t);
+
 
 func();
 }
 
 else if((*s)!=NULL){
-    func=(*s)->pcb_suspend->pointer_to_function;
-    current_pcb=(*s)->pcb_suspend;
+
+    mSchedulerSuspend(s);
     func();
 }
 
 }
 }
 
+void mSchedulerWait(struct wait_list **t){
+    func=(*t)->pcb_wait->pointer_to_function;
+    current_pcb=(*t)->pcb_wait;
+    (*t)->pcb_wait->status=running;
+
+    current_wait_list_pcb=(*t);
+    if((*t)->next!=NULL)
+        (*t)=(*t)->next;
+    else
+        (*t)=NULL;
+    current_wait_list_pcb->next=NULL;
+
+    current_suspend_list_pcb=NULL;
+}
 
 
-void * mTaskCreate(void (*process)(), char arg[], enum priority lev){
+
+void mSchedulerSuspend(struct suspend_list **s){
+
+    func=(*s)->pcb_suspend->pointer_to_function;
+    current_pcb=(*s)->pcb_suspend;
+
+    (*s)->pcb_suspend->status=running;
+
+    current_suspend_list_pcb=(*s);
+    if((*s)->next!=NULL)
+        (*s)=(*s)->next;
+    else
+        (*s)=NULL;
+    current_suspend_list_pcb->next=NULL;
+
+    current_wait_list_pcb=NULL;
+
+}
+
+
+
+void * mTaskCreate(void (*process)(), enum priority lev){
 
     static int i;
 
@@ -163,86 +168,125 @@ void * mTaskCreate(void (*process)(), char arg[], enum priority lev){
     process_control_block[i].status=ready;
     void *ret;
 
-
-    if(arg=="periodic")
-    {
-        struct wait_list *temp=(struct wait_list*)malloc(sizeof(struct wait_list));
-        temp->pcb_wait=&(process_control_block[i]);
-        temp->time_at_block=((float)(clock()-time_init))/CLOCKS_PER_SEC;
-        temp->del=0;
-        temp->pcb_wait->pid=i;
-
-        if(topWaitList==NULL){
-            topWaitList=temp;
-            temp->next=NULL;
-        }
-        else{
-            temp->next=topWaitList;
-            topWaitList=temp;
-        }
-
-        ret=topWaitList->pcb_wait;
-
+    struct suspend_list *temp=(struct suspend_list*)malloc(sizeof(struct suspend_list));
+    temp->pcb_suspend=&(process_control_block[i]);
+    temp->time_at_suspend=((float)(clock()-time_init))/CLOCKS_PER_SEC;
+    temp->time_atMost_resume=temp->time_at_suspend;
+    temp->pcb_suspend->pid=i;
+    if(topSuspendList==NULL){
+        topSuspendList=temp;
+        temp->next=NULL;
     }
-    else if(arg=="non-periodic"){
-
-        struct suspend_list *temp=(struct suspend_list*)malloc(sizeof(struct suspend_list));
-        temp->pcb_suspend=&(process_control_block[i]);
-        temp->time_at_suspend=((float)(clock()-time_init))/CLOCKS_PER_SEC;
-        temp->time_atMost_resume=temp->time_at_suspend;
-        temp->pcb_suspend->pid=i;
-        if(topSuspendList==NULL){
-            topSuspendList=temp;
-            temp->next=NULL;
-        }
-        else{
-            temp->next=topSuspendList;
-            topSuspendList=temp;
-        }
-
-        ret=topSuspendList->pcb_suspend;
-
+    else{
+        temp->next=topSuspendList;
+        topSuspendList=temp;
     }
 
+    ret=topSuspendList->pcb_suspend;
 
-i++;
-return ret;
+    i++;
+    return ret;
 }
 
 
 void wait(struct wait_list **t, float d){
 
-    struct wait_list *temp=*t;
-    while(temp->next!=NULL)
-      temp=temp->next;
-
-    temp->next=*t;
-    *t=(*t)->next;
-    temp=temp->next;
-    temp->next=NULL;
-
-    temp->time_at_block=((float)(clock() - time_init)/CLOCKS_PER_MSEC);
-    temp->del=d;
-    temp->time_at_resume=temp->time_at_block+d;
+    if(current_wait_list_pcb==NULL){
+        current_wait_list_pcb=(struct wait_list *)malloc(sizeof(struct wait_list));
+        current_wait_list_pcb->pcb_wait=current_pcb;
+    }
+    current_wait_list_pcb->time_at_block=((float)(clock() - time_init)/CLOCKS_PER_MSEC);
+    current_wait_list_pcb->del=d;
+    current_wait_list_pcb->time_at_resume=current_wait_list_pcb->time_at_block+d;
+    current_wait_list_pcb->pcb_wait->status=waiting;
 
 
-    temp->pcb_wait->status=waiting;
+    //wait list
+    struct wait_list *tempPointOfInsert=*t;
+    struct wait_list *tempBeforeInsert;
+    tempBeforeInsert=NULL;
+    if(tempPointOfInsert==NULL){
+        *t=current_wait_list_pcb;
+        tempPointOfInsert=*t;
+        goto DONE;
+    }
+
+    while(tempPointOfInsert!=NULL)
+    {
+
+    if(current_wait_list_pcb->time_at_resume<=tempPointOfInsert->time_at_resume){
+    //tempLastWaitList->next=tempPointOfInsert;
+    if(tempBeforeInsert!=NULL){
+        tempBeforeInsert->next=current_wait_list_pcb;
+        current_wait_list_pcb->next=tempPointOfInsert;
+    }
+    else{
+        *t=current_wait_list_pcb;
+        (*t)->next=tempPointOfInsert;
+        //tempSecondLastWaitList->next=NULL;
+    }
+    goto DONE;
+}
+
+    tempBeforeInsert=tempPointOfInsert;
+    tempPointOfInsert=tempPointOfInsert->next;
+}
+    if(tempPointOfInsert!=NULL)
+        tempPointOfInsert->next=current_wait_list_pcb;
+    else
+        tempBeforeInsert->next=current_wait_list_pcb;
 
 
+    DONE:return;
 }
 
 void suspend(struct suspend_list **s, float del){
-    struct suspend_list *temp=*s;
-    while(temp->next!=NULL)
-      temp=temp->next;
 
-    temp->next=*s;
-    *s=(*s)->next;
-    temp=temp->next;
-    temp->next=NULL;
+    if(current_suspend_list_pcb==NULL){
+        current_suspend_list_pcb=(struct suspend_list *)malloc(sizeof(struct suspend_list));
+        current_suspend_list_pcb->pcb_suspend=current_pcb;
+    }
+    current_suspend_list_pcb->time_at_suspend=((float)(clock() - time_init)/CLOCKS_PER_MSEC);
+    current_suspend_list_pcb->time_atMost_resume=current_suspend_list_pcb->time_at_suspend+del;
+    current_suspend_list_pcb->pcb_suspend->status=waiting;
 
-    temp->time_at_suspend=((float)(clock() - time_init)/CLOCKS_PER_MSEC);
-    temp->time_atMost_resume=temp->time_at_suspend+del;
+
+    //wait list
+    struct suspend_list *tempPointOfInsert=*s;
+    struct suspend_list *tempBeforeInsert;
+    tempBeforeInsert=NULL;
+    if(tempPointOfInsert==NULL){
+        tempPointOfInsert=current_suspend_list_pcb;
+        goto DONE_SUSPEND;
+    }
+
+    while(tempPointOfInsert!=NULL)
+    {
+
+    if(current_suspend_list_pcb->time_atMost_resume<=tempPointOfInsert->time_atMost_resume){
+    //tempLastWaitList->next=tempPointOfInsert;
+    if(tempBeforeInsert!=NULL){
+        tempBeforeInsert->next=current_suspend_list_pcb;
+        current_suspend_list_pcb->next=tempPointOfInsert;
+    }
+    else{
+        *s=current_suspend_list_pcb;
+        (*s)->next=tempPointOfInsert;
+        //tempSecondLastWaitList->next=NULL;
+    }
+    goto DONE_SUSPEND;
+}
+
+    tempBeforeInsert=tempPointOfInsert;
+    tempPointOfInsert=tempPointOfInsert->next;
+}
+    if(tempPointOfInsert!=NULL)
+        tempPointOfInsert->next=current_suspend_list_pcb;
+    else
+        tempBeforeInsert->next=current_suspend_list_pcb;
+
+
+    DONE_SUSPEND:return;
 
 }
 
@@ -255,6 +299,8 @@ void delay(unsigned int t){
 	while(((ticks2-ticks1)*1000/CLOCKS_PER_SEC)<t)
 		ticks2=clock();
 }
+
+
 
 inline void RTOS_debugger(){
 
