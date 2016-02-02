@@ -1,6 +1,0 @@
-#Files to be ignored
-*.depend
-*.layout
-*cbp
-bin/
-obj/
