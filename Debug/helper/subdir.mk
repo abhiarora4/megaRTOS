@@ -4,25 +4,37 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../helper/array.c \
 ../helper/bitArray.c \
 ../helper/circularBuffer.c \
-../helper/jason.c \
+../helper/json.c \
+../helper/json_former.c \
+../helper/priorityQueue.c \
 ../helper/queue.c \
-../helper/stack.c 
+../helper/stack.c \
+../helper/strings.c 
 
 OBJS += \
+./helper/array.o \
 ./helper/bitArray.o \
 ./helper/circularBuffer.o \
-./helper/jason.o \
+./helper/json.o \
+./helper/json_former.o \
+./helper/priorityQueue.o \
 ./helper/queue.o \
-./helper/stack.o 
+./helper/stack.o \
+./helper/strings.o 
 
 C_DEPS += \
+./helper/array.d \
 ./helper/bitArray.d \
 ./helper/circularBuffer.d \
-./helper/jason.d \
+./helper/json.d \
+./helper/json_former.d \
+./helper/priorityQueue.d \
 ./helper/queue.d \
-./helper/stack.d 
+./helper/stack.d \
+./helper/strings.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

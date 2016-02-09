@@ -5,17 +5,16 @@
 #include "queue.h"
 #include <stdbool.h>
 
-QUEUE_DEF(queue, uint16_t, 20);
 
 int enque(queue_t *que, void *enqData)
 {
-	if (que->front == que->qSize)
+	if (que->front == que->queLen)
 		return -1;
 
 	if (!enqData)
 		return -1;
 
-	memcpy(que->data + (que->front * que->elementSize), enqData, que->elementSize);
+	memcpy(que->data + (que->front * que->elemSize), enqData, que->elemSize);
 
 	que->front++;
 	return 0;
@@ -31,7 +30,7 @@ int deque(queue_t *que, void *deqData)
 	if (!deqData)
 		return -1;
 
-	memcpy(deqData, que->data + (que->rear * que->elementSize), que->elementSize);
+	memcpy(deqData, que->data + (que->rear * que->elemSize), que->elemSize);
 	que->rear++;
 	return 0;
 }
@@ -53,10 +52,11 @@ int queueGetUsedSpace(queue_t *que)
 
 int queueGetFreeSpace(queue_t *que)
 {
-	return (que->qSize - que->front);
+	return (que->queLen - que->front);
 }
 
 #ifdef __MAIN__
+QUEUE_DEF(queue, uint16_t, 20);
 
 int main()
 {

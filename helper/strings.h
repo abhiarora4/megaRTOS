@@ -9,6 +9,7 @@
 #define HELPER_STRINGS_H_
 
 #include <stddef.h>
+#include <string.h>
 
 char *strlcpy(char *dest, char *src, size_t n);
 

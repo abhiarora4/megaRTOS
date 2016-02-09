@@ -14,6 +14,9 @@ RM := rm -rf
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(strip $(INO_DEPS)),)
+-include $(INO_DEPS)
+endif
 ifneq ($(strip $(C_DEPS)),)
 -include $(C_DEPS)
 endif
@@ -36,7 +39,7 @@ rtos: $(OBJS) $(USER_OBJS)
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) rtos
+	-$(RM) $(EXECUTABLES)$(OBJS)$(INO_DEPS)$(C_DEPS) rtos
 	-@echo ' '
 
 .PHONY: all clean dependents

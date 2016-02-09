@@ -1,8 +1,7 @@
+#include "strings.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
-#include "strings.h"
 
 char *strlcpy(char *dest, char *src, size_t n)
 {

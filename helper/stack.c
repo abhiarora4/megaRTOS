@@ -33,7 +33,7 @@ int stackPop(stack_t *s, void *popData, bool readOnly)
 	return 0;
 }
 
-#define __MAIN__
+//#define __MAIN__
 
 #ifdef __MAIN__
 
