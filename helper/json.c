@@ -60,6 +60,7 @@ jasonTok_t *keyTok_alloc(jasonPair_t *pair)
 		return NULL;
 
 	pair->key.start = pair->key.end = -1;
+	pair->key.type = 'i';
 	return &(pair->key);
 }
 
@@ -69,6 +70,7 @@ jasonTok_t *valTok_alloc(jasonPair_t *pair)
 			return NULL;
 
 	pair->value.start = pair->value.end = -1;
+	pair->value.type = 'i';
 	return &(pair->value);
 }
 
@@ -88,9 +90,8 @@ int jsonParseObject()
 
 	char c;
 	char keyOrValue = 'u'; //'k' => key, 'v' => value, 'u' => unknown token!
-	char tokType = 'i'; // 's' => string, 'p' => primitive, 'a' => array, 'o' => object, 'i' => invalid
+//	tokType =>'s' => string, 'p' => primitive, 'a' => array, 'o' => object, 'i' => invalid
 
-	//int objDepth = 0;
 	do {
 		switch (c = jsParser.jsStr[jsParser.jsOffset]) {
 			case '{':
@@ -99,7 +100,7 @@ int jsonParseObject()
 					goto ERROR;
 				tok = keyTok_alloc(pair);
 				keyOrValue = 'k';
-				tokType = 'i';
+				tok->type = 'i';
 				break;
 
 			case ',': //Should be here after processing 'value' tok
@@ -111,7 +112,7 @@ int jsonParseObject()
 
 				tok = keyTok_alloc(pair);
 				keyOrValue = 'k';
-				tokType = 'i';
+				tok->type = 'i';
 				break;
 			case ':': //Should be here after processing 'key' token
 				if (keyOrValue != 'k')
@@ -119,7 +120,7 @@ int jsonParseObject()
 				tok = valTok_alloc(pair);
 				tok->start = jsParser.jsOffset + 1;
 				keyOrValue = 'v';
-				tokType = 'i';
+				tok->type = 'i';
 				break;
 
 			case '}':
@@ -129,38 +130,38 @@ int jsonParseObject()
 				break;
 
 			case '\"':
-				if (tokType == 'i') {
-					tokType = 's';
+				if (tok->type == 'i') {
+					tok->type = 's';
 					tok->start = jsParser.jsOffset + 1;
 					break;
 				}
-				if (tokType != 's')
+				if (tok->type != 's')
 					goto ERROR;
 				tok->end = jsParser.jsOffset - 1;
-				tokType = 'i';
+				tok->type = 'i';
 				break;
 
 			case '0': case '1': case '2': case '3': case '4': case '5':
 			case '6': case '7': case '8': case '9': case '.':
-
-				if (tokType == 'i')
-					tokType = 'n';
+			{
 				static bool decimal = false;
-				if (tokType != 'n')
+				if (tok->type == 'i') {
+					tok->type = 'n';
 					decimal = false;
+				}
 				if (decimal && c == '.')
 					goto ERROR;
 				if (c == '.')
 					decimal = true;
 				tok->end = jsParser.jsOffset;
 				break;
-
+			}
 			case '\n': case '\r': case '\t':
 				break;
 
 			default: //Alphabets!!
-				if (keyOrValue == 'i')
-					break;
+				if (keyOrValue == 'u')
+					goto ERROR;
 				if (!tok)
 					goto ERROR;
 				tok->end = jsParser.jsOffset;
@@ -198,18 +199,19 @@ int getValueAtJSKey(char *key, char *val)
 		if (strncmp(key, &js[jsPair[i].key.start], jsPair[i].key.end - jsPair[i].key.start + 1))
 			continue;
 		strlcpy(val, &js[jsPair[i].value.start], jsPair[i].value.end - jsPair[i].value.start + 1);
+		printf("Val type - %c\n", jsPair[i].value.type);
 		return 0;
 	}
 	return 1;
 }
 
-//#define __MAIN__
+#define __MAIN__
 
 #ifdef __MAIN__
 
 int main()
 {
-	char js[100] = "\t{\"abhi\":\t\"luck\", \"anu\":\"best\", \"papa\":\"angry\", \"mommy\":\"sweet\"}";
+	char js[100] = "\t{\"abhi\":\t2.5, \"anu\":\"best\", \"papa\":\"angry\", \"mommy\":\"sweet\"}";
 	json_init(js);
 	serialPrintln("Jason String - %s\n", js);
 	jsonParse();
