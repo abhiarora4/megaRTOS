@@ -1,30 +1,35 @@
 /*
- * stack.c
+ * stack.h
  *
- *  Created on: 23-Jan-2016
- *  Author: abhiarora
+ *  Created on: 03-Apr-2016
+ *      Author: abhiarora
  */
-#ifndef HELPER_STACK_H_
-#define HELPER_STACK_H_
 
-#include <stdint.h>
-#include <stdbool.h>
+#ifndef _STACK_H_
+#define _STACK_H_
 
-typedef struct {
-	uint16_t top;
-	void * const data;
-	uint16_t elementSize;
-	uint16_t stackSize;
-}stack_t;
+template <typename T>
+class Stack {
+private:
+	T *const data;
+	unsigned int top;
+	unsigned int length;
 
-#define STACK_DEF(n,t,s) t stackBuf_##n[s]; \
-	stack_t n = {.top = 0, \
-		.data = (void *)stackBuf_##n, \
-		.elementSize = sizeof(t), \
-		.stackSize = s }
+protected:
+
+public:
+	Stack();
+	Stack(T *const buf, unsigned int len);
+
+	int push(T *p);
+	int pop(T *p, bool readOnly);
+	int pop(T *p) { return pop(p,false); }
+
+	int len() { return top; }
+	int freeSpace() {return (length - top);}
+
+};
 
 
-int stackPush(stack_t *, void *);
-int stackPop(stack_t *, void *, bool);
 
 #endif /* HELPER_STACK_H_ */

@@ -1,14 +1,21 @@
+#include "queue.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include "queue.h"
 #include <stdbool.h>
 
+inline void reset(queue_t *q)
+{
+	q->rear = q->front = 0;
+}
+
+void reset(queue_t *que);
 
 int enque(queue_t *que, void *enqData)
 {
-	if (que->front == que->queLen)
+	if (que->front == que->len)
 		return -1;
 
 	if (!enqData)
@@ -23,14 +30,13 @@ int enque(queue_t *que, void *enqData)
 int deque(queue_t *que, void *deqData)
 {
 	if (que->front == que->rear) {
-		que->front = que->rear = 0;
+		reset(que);
 		return -1;
 	}
 
-	if (!deqData)
-		return -1;
+	if (deqData)
+		memcpy(deqData, que->data + (que->rear * que->elemSize), que->elemSize);
 
-	memcpy(deqData, que->data + (que->rear * que->elemSize), que->elemSize);
 	que->rear++;
 	return 0;
 }
@@ -40,7 +46,7 @@ bool isQueueEmpty(queue_t *que)
 	if(que->front != que->rear)
 		return false;
 
-	que->front = que->rear = 0;
+	reset(que);
 	return true;
 }
 
@@ -52,7 +58,7 @@ int queueGetUsedSpace(queue_t *que)
 
 int queueGetFreeSpace(queue_t *que)
 {
-	return (que->queLen - que->front);
+	return (que->len - que->front);
 }
 
 #ifdef __MAIN__

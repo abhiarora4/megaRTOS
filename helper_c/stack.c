@@ -1,6 +1,5 @@
 #include "stack.h"
 
-#include "../hal/serial.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -9,25 +8,24 @@
 
 int stackPush(stack_t *s, void *pushData)
 {
-	uint16_t new_top = s->top + 1;
-	if (new_top == s->stackSize)
-		return -1;
-
 	if (!pushData)
 		return -1;
 
-	memcpy(s->data + (s->top * s->elementSize), pushData, s->elementSize);
-	s->top = new_top;
+	if (s->top == s->length)
+		return -1;
+
+	memcpy(s->data + (s->top * s->elemSize), pushData, s->elemSize);
+	s->top++;
 	return 0;
 }
 
 int stackPop(stack_t *s, void *popData, bool readOnly)
 {
-	if (s->top == 0)
+	if (!s->top)
 		return -1;
 
 	if (popData)
-		memcpy(popData, s->data + ((s->top - 1) * s->elementSize), s->elementSize);
+		memcpy(popData, s->data + ((s->top - 1) * s->elemSize), s->elemSize);
 	if (readOnly)
 			s->top--;
 	return 0;

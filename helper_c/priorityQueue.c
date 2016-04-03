@@ -23,14 +23,14 @@
 
 int priorityQueEnque(priorityQueue_t *pq, void *enq, uint8_t priority)
 {
-	uint16_t front = (pq->front + 1) % pq->queLen;
+	uint16_t front = (pq->front + 1) % pq->len;
 	if (front == pq->rear)
 		return -1;
 	if (!enq)
 		return -1;
 
 	int i, j;
-	for (i = pq->rear; i != pq->front; (i = (i + 1) % pq->queLen))
+	for (i = pq->rear; i != pq->front; (i = (i + 1) % pq->len))
 		if (*((uint8_t *)extractPriority(pq) + (pq->elemSize * i)) < priority) break;
 
 	i -= pq->front;//2 => rear data=>1,2,3,4,5,6,7,9,10,11,__FRONT__
@@ -60,7 +60,7 @@ int priorityQueDeque(priorityQueue_t *pq, void *deq, uint8_t priority, bool peek
 	memcpy(deq, extractData(pq) + (pq->rear * pq->elemSize), pq->elemSize);
 
 	if (!peek)
-		pq->rear = (pq->rear + 1) % pq->queLen;
+		pq->rear = (pq->rear + 1) % pq->len;
 	return 0;
 }
 
