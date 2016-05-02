@@ -1,21 +1,17 @@
-/*
- * heap.c
- *
- *  Created on: 27-Apr-2016
- *      Author: abhiarora
- */
+#include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
 
 #define MAGIC_NUMBER 0x1234
 
-struct pool_t {
+struct pool_s {
 	size_t size;
-	struct pool_t *next;
-	int magic_number;
+	struct pool_s *next;
+	int magic_number; //A Magic Number is for Validing Memory Header
+	uint8_t space[]; //Flexible Array Member
 };
 
-static struct pool_t *_free = NULL;
+static struct pool_s *_free = NULL;
 static size_t _size=0;
 static bool _init=false;
 
@@ -28,8 +24,9 @@ int mem_manage_init(unsigned char *pool, size_t size)
 		return -1;
 
 	_size=size;
-	_free=(struct pool_t *)pool;
-	_free->size = size - sizeof(struct pool_t);
+
+	_free=(struct pool_s *)pool;
+	_free->size = size - sizeof(struct pool_s);
 	_free->next=NULL;
 	_free->magic_number=MAGIC_NUMBER;
 
@@ -37,14 +34,16 @@ int mem_manage_init(unsigned char *pool, size_t size)
 	return 0;
 }
 
+#define ALLOC_BREAK_MARGIN (5*sizeof(struct pool_s))
+
 void *alloc(size_t size)
 {
-	struct pool_t *ptr;
-	struct pool_t *best=NULL;
-	struct pool_t *pBest=NULL;
+	struct pool_s *ptr;
+	struct pool_s *best = NULL;
+	struct pool_s **pBest = &_free;
 
-	size = (size + sizeof(struct pool_t) - 1) / sizeof(struct pool_t);
-	size *=  sizeof(struct pool_t);
+	size = (size + sizeof(struct pool_s) - 1) / sizeof(struct pool_s);
+	size *=  sizeof(struct pool_s);
 
 	for (ptr=_free; ptr; ptr=ptr->next) {
 		if (ptr->size < size)
@@ -53,47 +52,47 @@ void *alloc(size_t size)
 			best=ptr;
 		if (best->size <= ptr->size)
 			continue;
-		pBest=best;
+		*pBest=&(best->next);
 		best=ptr;
 	}
+
 	if (!best)
 		return NULL;
 
-	if (best->size > (size + sizeof(struct pool_t))) {
-		ptr = best + (best->size - (size+sizeof(struct pool_t)));
-		best->size-=size+sizeof(struct pool_t);
+	size += sizeof(struct pool_s);
+	if (best->size > (size + ALLOC_BREAK_MARGIN)) {
+		ptr = best->space + (best->size - size);
+		best->size -= size;
 		best=ptr;
 	} else {
-		pBest->next=best->next;
-
+		*pBest=best->next;
 	}
-	best->next=NULL;
 
-	return (void *)(best++);
+	return (void *)(best->space);
 }
 
 void *getMetaPtr(void *ptr)
 {
-	return (((struct pool_t *)ptr) - 1);
+	return (((struct pool_s *)ptr) - 1);
 }
 
 int release(void *ptr)
 {
-	struct pool_t *chunk = getMetaPtr(ptr);
+	struct pool_s *chunk = getMetaPtr(ptr);
 	if (chunk->magic_number != MAGIC_NUMBER)
 		return -1;
-	struct pool_t *p, *prev;
+	struct pool_s *p, *prev;
 	bool done=false;
 	for (p=_free; p; prev=p, p=p->next) {
-		if ((p+p->size) == chunk) {
+		if ((p->space + p->size) == chunk) {
 			p->size += chunk->size;
 			chunk=p;
 			done=true;
 			continue;
 		}
-		if ((chunk+chunk->size) == p) {
+		if ((chunk->space + chunk->size) == p) {
 			prev->next = p->next;
-			chunk->size+=p->size;
+			chunk->size += p->size;
 			done=true;
 			continue;
 		}
@@ -101,10 +100,9 @@ int release(void *ptr)
 
 	if (done)
 		return 0;
+
 	prev->next=chunk;
 	chunk->next=NULL;
-
 	return 0;
-
 }
 
