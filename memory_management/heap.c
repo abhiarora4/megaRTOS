@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+/*
+
 #define MAGIC_NUMBER 0x1234
 
 struct pool_s {
@@ -105,4 +107,5 @@ int release(void *ptr)
 	chunk->next=NULL;
 	return 0;
 }
+*/
 

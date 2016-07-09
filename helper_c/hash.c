@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "hash.h"
+/*
 
 // URL - https://gist.github.com/phsym/4605704
 // PDF - http://www.cs.wustl.edu/~cytron/rthash.pdf
@@ -66,3 +67,5 @@ char * removeFromHash(hashTable_t *hash, char *key)
 
 
 }
+
+*/

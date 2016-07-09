@@ -7,6 +7,12 @@
 #include <stdbool.h>
 #include <ctype.h>
 
+#define isBrackets(c) ((c == '[') || (c == ']') || (c == '{') || (c == '}'))
+#define isquote(c) ((c == '\'') || (c == '\"'))
+#define isTokValidChar(c) (isalnum(c) || isBrackets(c) || isQuotes(c) || (c == '_'))
+#define isUnderScore(c) (c == '_')
+#define isWhiteSpace(c) ((c == '\n') || (c == '\r') || (c == '\t') || (c == ' '))
+
 
 struct jasonParser_s{
 	char *jsStr;
@@ -73,12 +79,6 @@ jsonTok_t *valTok_alloc(jsonPair_t *pair)
 	pair->value.type = 'i';
 	return &(pair->value);
 }
-
-#define isBrackets(c) ((c == '[') || (c == ']') || (c == '{') || (c == '}'))
-#define isquote(c) ((c == '\'') || (c == '\"'))
-#define isTokValidChar(c) (isalnum(c) || isBrackets(c) || isQuotes(c) || (c == '_'))
-#define isUnderScore(c) (c == '_')
-#define isWhiteSpace(c) ((c == '\n') || (c == '\r') || (c == '\t') || (c == ' '))
 
 char getTokType(jsonTok_t *tok)
 {
@@ -236,12 +236,16 @@ int getValAtJSKey(char *key, char *val)
 	if (!jsParser.parsed)
 		return -1;
 
+	size_t keyLen = strlen(key);
 	char *js = jsParser.jsStr;
 	int i;
 	for (i = 0; i < jsParser.numJSPair; i++) {
-		if (strncmp(key, &js[jsPair[i].key.start], jsPair[i].key.end - jsPair[i].key.start + 1))
+		size_t jsKeyLen = jsPair[i].key.end - jsPair[i].key.start + 1;
+		if (keyLen != jsKeyLen)
 			continue;
-		strlcpy(val, &js[jsPair[i].value.start], jsPair[i].value.end - jsPair[i].value.start + 1);
+		if (strncmp(key, &js[jsPair[i].key.start], jsKeyLen))
+			continue;
+		strlcpy(val, &js[jsPair[i].value.start], jsKeyLen);
 		return 0;
 	}
 	return 1;
